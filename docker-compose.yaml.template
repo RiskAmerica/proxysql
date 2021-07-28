@@ -1,0 +1,58 @@
+version: '3.4'
+
+networks:
+  proxysql:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.19.0.0/29
+services:
+  proxysql:
+    image: proxysql/proxysql:latest
+    volumes:
+      - type: bind
+        source: ./proxysql/proxysql.cnf
+        target: /etc/proxysql.cnf
+    ports:
+      - "3306:3306"
+    depends_on:
+      - "dbusa"
+    networks:
+      proxysql:
+        aliases:
+          - proxysql
+
+  dbusa:
+    image: riskamerica/simplesshtunel
+    environment:
+      - USER=proxysql
+      - REMOTE_GW=$PUBLIC_IP_USA
+      - REMOTE_HOST=$PRIVATE_IP_USA
+      - LOCAL_PORT=3306
+      - REMOTE_PORT=3306
+    volumes:
+      - type: bind
+        source: /path_to_private_key/id_rsa
+        target: /root/.ssh/id_rsa
+    networks:
+      proxysql:
+        aliases:
+          - dbusa
+
+  dbsouthamerica:
+    image: riskamerica/simplesshtunel
+    environment:
+      - USER=proxysql
+      - REMOTE_GW=$PUBLIC_IP_SOUTHAMERICA
+      - REMOTE_HOST=$PRIVATE_IP_SOUTHAMERICA
+      - LOCAL_PORT=3306
+      - REMOTE_PORT=3306
+    volumes:
+      - type: bind
+        source: /path_to_private_key/id_rsa
+        target: /root/.ssh/id_rsa
+    networks:
+      proxysql:
+        aliases:
+          - dbsouthamerica
